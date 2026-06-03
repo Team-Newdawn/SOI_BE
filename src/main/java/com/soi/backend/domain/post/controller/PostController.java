@@ -7,6 +7,7 @@ import com.soi.backend.domain.post.entity.PostStatus;
 import com.soi.backend.domain.post.entity.PostType;
 import com.soi.backend.domain.post.service.PostService;
 import com.soi.backend.global.ApiResponseDto;
+import com.soi.backend.global.metrics.PostRefreshMetricsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import java.util.List;
 public class PostController {
 
     private final PostService postService;
+    private final PostRefreshMetricsService postRefreshMetricsService;
 
     @Operation(summary = "게시물 추가", description = "게시물을 추가합니다.")
     @PostMapping("/create")
@@ -61,6 +63,7 @@ public class PostController {
                                                                               @RequestParam(required = false) Long notificationId,
                                                                               @RequestParam(defaultValue = "0") int page) {
         List<PostRespDto> postRespDtos = postService.findByCategoryId(categoryId, userId, notificationId, page);
+        postRefreshMetricsService.recordPostRefresh(userId, "category");
         return ResponseEntity.ok(ApiResponseDto.success(postRespDtos,"게시물 조회 완료"));
     }
 
@@ -69,6 +72,7 @@ public class PostController {
     public ResponseEntity<ApiResponseDto<List<PostRespDto>>> findAllByUserId(@AuthenticationPrincipal Long userId, @RequestParam PostStatus postStatus,
                                                                              @RequestParam(defaultValue = "0") int page) {
         List<PostRespDto> postRespDtos = postService.findPostToShowMainPage(userId, postStatus, page);
+        postRefreshMetricsService.recordPostRefresh(userId, "feed");
         return ResponseEntity.ok(ApiResponseDto.success(postRespDtos,"전체 게시물 조회 완료"));
     }
 
@@ -85,6 +89,7 @@ public class PostController {
                                                                                 @RequestParam PostType postType,
                                                                                 @RequestParam int page) {
         Slice<PostRespDto> postRespDtos = postService.findByUserId(userId, postType, page);
+        postRefreshMetricsService.recordPostRefresh(userId, "user_media");
         return ResponseEntity.ok(ApiResponseDto.success(postRespDtos,"게시물 조회 완료"));
     }
 }

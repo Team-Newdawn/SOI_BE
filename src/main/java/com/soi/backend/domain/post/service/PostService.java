@@ -22,6 +22,7 @@ import com.soi.backend.domain.user.entity.User;
 import com.soi.backend.domain.user.repository.UserRepository;
 import com.soi.backend.global.exception.CustomException;
 import com.soi.backend.global.metrics.BusinessMetricsService;
+import com.soi.backend.global.metrics.PostRefreshMetricsService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -50,6 +51,7 @@ public class PostService {
     private final NotificationService notificationService;
     private final CommentService commentService;
     private final BusinessMetricsService businessMetricsService;
+    private final PostRefreshMetricsService postRefreshMetricsService;
 
     @Transactional
     public Boolean addPostToCategory(PostCreateReqDto postCreateReqDto) {
@@ -115,6 +117,7 @@ public class PostService {
 
         postRepository.save(post);
         businessMetricsService.increment("post_created", "post_type", post.getPostType().name());
+        postRefreshMetricsService.recordPostCreated(post.getUserId(), post.getPostType().name());
 
         return post.getId();
     }

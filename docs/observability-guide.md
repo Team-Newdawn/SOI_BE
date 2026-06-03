@@ -187,6 +187,88 @@ sum by (post_type) (
 )
 ```
 
+## 게시물 작성 후 새로고침 지연시간
+
+커스텀 timer 이름:
+
+- `soi.post.refresh.delay`
+
+Prometheus에서는 보통 아래 이름으로 보인다.
+
+- `soi_post_refresh_delay_seconds_count`
+- `soi_post_refresh_delay_seconds_sum`
+- `soi_post_refresh_delay_seconds_bucket`
+
+측정 방식:
+
+- `POST /post/create` 성공 후 사용자별 최근 게시물 생성 시각을 서버 메모리에 저장한다.
+- 같은 사용자가 아래 게시물 목록 조회 API 중 하나를 처음 호출하면, 생성 시각부터 조회 시각까지의 지연시간을 기록한다.
+- 한 게시물 생성 이벤트당 첫 조회만 측정한다.
+- `userId`는 Prometheus 태그에 넣지 않는다. 사용자별 고카디널리티 태그는 Prometheus 성능과 저장 비용에 좋지 않다.
+
+측정되는 조회 경로:
+
+- `GET /post/find-all`: `source="feed"`
+- `GET /post/find-by/category`: `source="category"`
+- `GET /post/find/by-user-id`: `source="user_media"`
+
+주요 태그:
+
+- `source`
+- `post_type`
+
+### 평균 새로고침 지연시간
+
+```promql
+sum(rate(soi_post_refresh_delay_seconds_sum[1d]))
+/
+sum(rate(soi_post_refresh_delay_seconds_count[1d]))
+```
+
+### 조회 경로별 평균 새로고침 지연시간
+
+```promql
+sum by (source) (
+  rate(soi_post_refresh_delay_seconds_sum[1d])
+)
+/
+sum by (source) (
+  rate(soi_post_refresh_delay_seconds_count[1d])
+)
+```
+
+### 5초 이내 새로고침 비율
+
+```promql
+sum(increase(soi_post_refresh_delay_seconds_bucket{le="5.0"}[1d]))
+/
+sum(increase(soi_post_refresh_delay_seconds_count[1d]))
+```
+
+### 10초 이내 새로고침 비율
+
+```promql
+sum(increase(soi_post_refresh_delay_seconds_bucket{le="10.0"}[1d]))
+/
+sum(increase(soi_post_refresh_delay_seconds_count[1d]))
+```
+
+### p50/p95 새로고침 지연시간
+
+```promql
+histogram_quantile(
+  0.5,
+  sum(rate(soi_post_refresh_delay_seconds_bucket[1d])) by (le)
+)
+```
+
+```promql
+histogram_quantile(
+  0.95,
+  sum(rate(soi_post_refresh_delay_seconds_bucket[1d])) by (le)
+)
+```
+
 ### 댓글 타입별 생성 수
 
 ```promql
