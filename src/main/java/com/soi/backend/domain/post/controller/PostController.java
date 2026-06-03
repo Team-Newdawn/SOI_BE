@@ -32,6 +32,10 @@ public class PostController {
     @PostMapping("/create")
     public ResponseEntity<ApiResponseDto<Boolean>> create(@RequestBody PostCreateReqDto postCreateReqDto) {
         Boolean categoryId = postService.addPostToCategory(postCreateReqDto);
+        postRefreshMetricsService.recordPostCreated(
+                postCreateReqDto.getUserId(),
+                postCreateReqDto.getPostType() == null ? null : postCreateReqDto.getPostType().name()
+        );
         return ResponseEntity.ok(ApiResponseDto.success(categoryId,"게시물 추가 완료"));
     }
 
@@ -63,7 +67,6 @@ public class PostController {
                                                                               @RequestParam(required = false) Long notificationId,
                                                                               @RequestParam(defaultValue = "0") int page) {
         List<PostRespDto> postRespDtos = postService.findByCategoryId(categoryId, userId, notificationId, page);
-        postRefreshMetricsService.recordPostRefresh(userId, "category");
         return ResponseEntity.ok(ApiResponseDto.success(postRespDtos,"게시물 조회 완료"));
     }
 
@@ -89,7 +92,6 @@ public class PostController {
                                                                                 @RequestParam PostType postType,
                                                                                 @RequestParam int page) {
         Slice<PostRespDto> postRespDtos = postService.findByUserId(userId, postType, page);
-        postRefreshMetricsService.recordPostRefresh(userId, "user_media");
         return ResponseEntity.ok(ApiResponseDto.success(postRespDtos,"게시물 조회 완료"));
     }
 }

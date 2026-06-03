@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PostRefreshMetricsServiceTest {
 
     @Test
-    void recordsDelayBetweenPostCreationAndNextRefreshForSameUser() {
+    void recordsDelayBetweenPostCreateResponseAndNextFindAllRefreshForSameUser() {
         SimpleMeterRegistry registry = new SimpleMeterRegistry();
         MutableClock clock = new MutableClock(Instant.parse("2026-06-04T00:00:00Z"));
         PostRefreshMetricsService service = new PostRefreshMetricsService(registry, clock);
@@ -35,19 +35,19 @@ class PostRefreshMetricsServiceTest {
     }
 
     @Test
-    void recordsOnlyFirstRefreshAfterPostCreation() {
+    void recordsOnlyFirstFindAllRefreshAfterPostCreation() {
         SimpleMeterRegistry registry = new SimpleMeterRegistry();
         MutableClock clock = new MutableClock(Instant.parse("2026-06-04T00:00:00Z"));
         PostRefreshMetricsService service = new PostRefreshMetricsService(registry, clock);
 
         service.recordPostCreated(1L, "VIDEO");
         clock.advance(Duration.ofSeconds(2));
-        service.recordPostRefresh(1L, "category");
+        service.recordPostRefresh(1L, "feed");
         clock.advance(Duration.ofSeconds(5));
-        service.recordPostRefresh(1L, "category");
+        service.recordPostRefresh(1L, "feed");
 
         Timer timer = registry.find("soi.post.refresh.delay")
-                .tag("source", "category")
+                .tag("source", "feed")
                 .tag("post_type", "VIDEO")
                 .timer();
 
